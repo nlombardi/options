@@ -74,4 +74,4 @@ class LookupCompany:
 LookupCompany = LookupCompany(defaultAPI="yahoo", symbol="TSLA")
 data = LookupCompany.getDetail()
 df = pd.DataFrame.from_dict(data)
-df.to_csv(f"C:/Users/nick/PycharmProjects/Options/output/{LookupCompany.symbol}.csv")
+df.to_csv(f"C:/Users/../{LookupCompany.symbol}.csv")
