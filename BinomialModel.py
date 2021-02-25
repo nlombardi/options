@@ -106,7 +106,7 @@ def parsedate(date):
         raise argparse.ArgumentTypeError(date + 'is not a proper date format')
 
 
-path = '{PATH TO DATA}'
+path = 'C:/Users/nick/Documents/Development/Python/Options Pricing Models/Binomial Model/'
 df = pd.read_csv(path + 'iSharesIndex.csv', index_col=None, parse_dates=['date'])
 prices = np.array(df['close'])[-250:]  # 6-months of trading days
 
