@@ -1,8 +1,6 @@
 import yfinance as yf
-import matplotlib.pyplot as plt
 import requests
 import pandas as pd
-from pandas.plotting import register_matplotlib_converters
 import io
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -11,8 +9,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException
 import os
-from statistics import mean
-import datetime
+
 
 
 class GetData:
@@ -85,7 +82,7 @@ class GetData:
         return print(self._quote)
 
     def get_stock_data(self):
-        # Takes a symbol and grabs more detailed Ticker data and calculates 200 ma
+        # Takes a symbol and grabs more detailed Ticker data
         self._tikr_data = yf.Ticker(f"{self.symbol}")
         return self._tikr_data
 

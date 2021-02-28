@@ -1,17 +1,22 @@
 import yfinance as yf
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import mplfinance as mpf
+import matplotlib.dates as dates
 import os
 from statistics import mean
 import datetime
-import DataScrape
+from DataScrape import GetData
 
 
 class Analysis:
 
-    def __init__(self, symbol, days=25, symbol2=None, save=None):
+    def __init__(self, symbol, days=25, period="3mo", interval="1d", symbol2=None, save=None):
         self.p1 = symbol
         self.p2 = symbol2
         self.days = days
+        self.period = period
+        self.interval = interval
         self.save = save
         self.path = "/PycharmProjects/Options/output/"
         self.stocklist = []
@@ -77,10 +82,10 @@ class Analysis:
         calculates the 200ma, adjusts if any dividends or stock splits occured in that time.
         """
         # ToDo: need to do a lag and look at the previous 7 days to compare the 200ma/50ma cross to see the direction
-        for i in DataScrape.GetData.get_stock_list():
+        for i in GetData.get_stock_list():
             cross = False
             try:
-                data = DataScrape.GetData(i)
+                data = GetData(i)
                 tikr_data = data.get_stock_data()
                 tikr_actions = tikr_data.actions
                 # tikrYrDy = tikr_data.history(period="1y", interval="1d")
@@ -92,7 +97,7 @@ class Analysis:
             except ValueError as e:
                 # print(f"Not enough data, Exception: {e}")
                 continue
-            if 1 > tikr_50ma / tikr_200ma > 0.97 and \
+            if 1 > tikr_50ma / tikr_200ma > 0.99 and \
                     last_close > tikr_9ma and \
                     tikr_50ma < last_close < tikr_200ma:
                 cross = True
@@ -104,7 +109,7 @@ class Analysis:
 
     def Ichimoku(self):
         # TODO: plot Ichimoku
-        data = DataScrape.GetData(self.p1, period="3mo", interval="1d").get_stock_history
+        data = GetData(self.p1, period=self.period, interval=self.interval).get_stock_history
         # calculate Conversion Line (Tenkan)
         for i in range(len(data)-8):
             highest_high_9ma = round(data["High"].iloc[:i+9].max(), 4)
