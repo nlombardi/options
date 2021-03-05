@@ -14,7 +14,9 @@ import os
 
 class GetData:
 
-    def __init__(self, symbol, raw=None, save=None, period="1mo", interval="15m"):
+    def __init__(self, symbol=None, raw=None, save=None, period="1mo", interval="15m", source="Nasdaq"):
+        if source is None:
+            source = {"Nasdaq", "S&P500"}
         self.url = f"https://quotes.freerealtime.com/quotes/symbol/Quote?symbol={symbol}"
         self.symbol = symbol
         self.symbols = []
@@ -28,6 +30,7 @@ class GetData:
         self.save = save
         self.period = period
         self.interval = interval
+        self.source = source
 
         # Webdriver options
         self.options = Options()
@@ -41,14 +44,24 @@ class GetData:
                                   options=self.options)
         return driver
 
+    @property
+    def check_symbol(self):
+        if not self.symbol:
+            raise ValueError("Symbol not defined")
     def get_stock_list(self):
         """
         Go to Nasdaq stocks page and download the .csv file, replace in directory
         """
         for tries in range(5):
             try:
-                r = requests.get("https://pkgstore.datahub.io/core/nasdaq-listings/nasdaq-listed_csv/data/"
-                                 "7665719fb51081ba0bd834fde71ce822/nasdaq-listed_csv.csv")
+                if self.source == "Nasdaq":
+                    r = requests.get("https://pkgstore.datahub.io/core/nasdaq-listings/nasdaq-listed_csv/data/"
+                                     "7665719fb51081ba0bd834fde71ce822/nasdaq-listed_csv.csv")
+                elif self.source == "S&P500":
+                    r = requests.get("https://datahub.io/core/s-and-p-500-companies-financials/r/constituents"
+                                     "-financials.csv")
+                else:
+                    raise ValueError("Stock list source not defined (Nasdaq or S&P500)")
                 if r.status_code != 200:
                     raise ValueError("Invalid response from webserver")
                 # Scrape results
@@ -56,10 +69,11 @@ class GetData:
                 print("Success")
                 break
             except Exception as e:
-                print(f"Request failed, Exception:{e}")
+                print(f"Request failed, Exception: {e}")
         return self.symbols["Symbol"].tolist()
 
     def geturl(self):
+        self.check_symbol()
         # accesses freerealtime quotes and returns the raw data as well as the quote
         driver = self.open_driver()
         driver.get(self.url)
@@ -82,6 +96,7 @@ class GetData:
         return print(self._quote)
 
     def get_stock_data(self):
+        self.check_symbol()
         # Takes a symbol and grabs more detailed Ticker data
         self._tikr_data = yf.Ticker(f"{self.symbol}")
         return self._tikr_data
