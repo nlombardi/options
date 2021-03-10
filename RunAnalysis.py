@@ -2,16 +2,14 @@ import yfinance as yf
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import mplfinance as mpf
-import matplotlib.dates as dates
 import os
-from statistics import mean
-import datetime
 from DataScrape import GetData
+from datetime import datetime
 
 
 class Analysis:
 
-    def __init__(self, symbol, days=25, period="3mo", interval="1d", symbol2=None, save=None):
+    def __init__(self, symbol, days=25, period="1mo", interval="15m", symbol2=None, save=None):
         self.p1 = symbol
         self.p2 = symbol2
         self.days = days
@@ -59,95 +57,64 @@ class Analysis:
                 self.stocklist.append(i)
 
     def ichimoku(self):
-        # TODO: plot Ichimoku using matplotlib finance
+        # TODO: need to re-write the calculations for the lines into DataFrames so I can use the shift() fn to plot
+
         data = GetData(self.p1, period=self.period, interval=self.interval).get_stock_history
         # calculate Conversion Line (Tenkan)
-        for i in range(len(data)-8):
-            highest_high_9ma = round(data["High"].iloc[:i+9].max(), 4)
-            lowest_low_9ma = round(data["Low"].iloc[:i+9].min(), 4)
-            self.tenkan[data.iloc[i+8].name.date()] = mean([highest_high_9ma, lowest_low_9ma])
-        """
-        calculate Base Line (Kijun), Trend Strength (Chikou, 26 day price lag), 
-        Resistance (Senkou_a), Support (Senkou_b) --> 26 days forward calculated from Kijun Line
-        """
-        for i in range(len(data)-25):
-            highest_high_26ma = round(data["High"].iloc[:i+26].max(),4)
-            lowest_low_26ma = round(data["Low"].iloc[:i+26].min(), 4)
-            if i+52 < len(data):
-                highest_high_52ma = round(data["High"].iloc[:i+52].max(),4)
-                lowest_low_52ma = round(data["Low"].iloc[:i+52].min(), 4)
-            elif i+52 > len(data):
-                highest_high_52ma = round(data["High"].iloc[i:len(data)].max(),4)
-                lowest_low_52ma = round(data["Low"].iloc[i:len(data)].min(), 4)
-            self.kijun[data.iloc[i].name.date()] = mean([highest_high_26ma, lowest_low_26ma])
-            self.chikou[data.iloc[i].name.date()] = data["Close"].iloc[i+25]
-            self.senkou_a[data.iloc[51].name.date()+datetime.timedelta(days=i)] = mean([list(self.tenkan.items())[i+17][1],
-                                                                                        list(self.kijun.items())[i][1]])
-            self.senkou_b[data.iloc[51].name.date() + datetime.timedelta(days=i)] = mean([highest_high_52ma, lowest_low_52ma])
-        return data, self.tenkan, self.kijun, self.chikou, self.senkou_a, self.senkou_b
+        # Tenkan-sen (Conversion Line): (9-period high + 9-period low)/2
+        nine_period_high = data['High'].rolling(window=9).max()
+        nine_period_low = data['Low'].rolling(window=9).min()
+        data['tenkan_sen'] = (nine_period_high + nine_period_low) / 2
+
+        # Kijun-sen (Base Line): (26-period high + 26-period low)/2
+        twtysix_period_high = data['High'].rolling(window=26).max()
+        twtysix_period_low = data['Low'].rolling(window=26).min()
+        data['kijun_sen'] = (twtysix_period_high + twtysix_period_low) / 2
+
+        # Chikou-span (Trend strength indicator): Close shifted 26 days behind
+        data['chickou_span'] = data['Close'].shift(-26)
+
+        # Senkou-span-a (Resistance line): (conversion line + base line) /2 -- shifted 26 days ahead
+        data['senkou_span_a'] = ((data['tenkan_sen'] + data['kijun_sen']) / 2).shift(26)
+
+        # Senkou-span-b (Support line): (52-period high + 52-period low) /2 -- shifted 26 days ahead
+        ftytwo_period_high = data['High'].rolling(window=52).max()
+        ftytwo_period_low = data['Low'].rolling(window=52).min()
+        data['senkou_span_b'] = ((ftytwo_period_high + ftytwo_period_low) / 2).shift(26)
+
+        return data
 
 
 class ViewData(Analysis):
-
     def __init_(self, symbol):
         self.symbol = symbol
         super().__init__(self.symbol)
 
-    def view_chart(self):
-        # pull multiple symbols and plot against
-        fig, ax = plt.subplots()
-        ax.grid()
-        # if only one symbol
-        if not self.p2:
-            data = yf.download(f"{self.p1}")
-            p1 = ax.plot(data.tail(self.days).index,
-                         data["Close"].tail(self.days),
-                         color="red", marker="o",
-                         label=self.p1)
-            ax.set_xlabel("Date", fontsize=12)
-            ax.set_xticklabels(ax.get_xticks(), rotation=90, fontsize=8)
-            ax.set_ylabel("Close Price", fontsize=12)
-            if self.save is True:
-                fig.savefig(
-                    executable_path=os.environ["USERPROFILE"] + self.path + f"{self.p1}_last{self.days}days.jpg",
-                    format="jpeg",
-                    bbox_inches="tight",
-                    dpi=300)
-        elif self.p2:
-            data = yf.download(f"{self.p1} {self.p2}")
-            ax.set_xlabel("Date", fontsize=12)
-            ax.set_xticklabels(ax.get_xticks(), rotation=90, fontsize=8)
-            ax.set_ylabel("Close Price", fontsize=12)
-            # First Line
-            p1 = ax.plot(data.tail(self.days).index,
-                         data["Close"].tail(self.days),
-                         color="red", marker="o",
-                         label=self.p1)
-            # Second Line
-            ax2 = ax.twinx()
-            p2 = ax2.plot(data.tail(10).index,
-                          data["Close"][self.p2].tail(10),
-                          color="green", marker="o",
-                          label=self.p2)
-            # format graph
-            lns = p1 + p2
-            labs = [l.get_label() for l in lns]
-            ax.legend(lns, labs, loc=0)
-            if self.save is True:
-                fig.savefig(
-                    executable_path=os.environ[
-                                        "USERPROFILE"] + self.path + f"{self.p1}_{self.p2}_last{self.days}days.jpg",
-                    format="jpeg", dpi=300, bbox_inches="tight")
-        # show / save graph
-        plt.show()
+    def compare_with_index(self):
+        # TODO: plot a comparison with the S&P500 or NASDAQ
+        return
 
     def plot_ichimoku(self):
+        # TODO: add RSI oscillator to volume
+        # Get data from Analysis class
         data = super().ichimoku()
-        ap0 = [mpf.make_addplot(self.tenkan, color='b'),
-               mpf.make_addplot(self.kijun, color='r'),
-               mpf.make_addplot(self.chikou, color='g'),
-               mpf.make_addplot(self.senkou_a, color='y'),
-               mpf.make_addplot(self.senkou_b, color='purple'),]
-        mpf.plot(data, type='candle', addplot=ap0)
+        # Setup plot based on nightclouds MPL style with no grid
+        s = mpf.make_mpf_style(base_mpf_style='nightclouds', gridstyle='')
+        setup = dict(type='candle', style=s, volume=True, figscale=2, scale_width_adjustment=dict(candle=1.5),
+                     fill_between=dict(y1=data['senkou_span_a'].values, y2=data['senkou_span_b'].values, alpha=0.25),
+                     tight_layout=False)
+        # Create Ichimoku lines to add to the plot
+        ap0 = [mpf.make_addplot(data['tenkan_sen'], color='g', width=0.8, alpha=0.75),
+               mpf.make_addplot(data['kijun_sen'], color='r', width=0.8, alpha=0.75),
+               mpf.make_addplot(data['chickou_span'], color='pink', linestyle='dotted', width=0.4),
+               mpf.make_addplot(data['senkou_span_a'], color='y', width=0.5, alpha=0.5),
+               mpf.make_addplot(data['senkou_span_b'], color='purple', width=0.5, alpha=0.5)]
+        # Plot data and add lines
+        mpf.plot(data, **setup, addplot=ap0, title=f'\n {symbol.upper()}, {datetime.now().strftime("%m/%d/%Y")}')
 
 
+if __name__ == "__main__":
+    symbol = input("Please input symbol: ")
+    period = input("6mo/1mo: ")
+    interval = input("1d/15m: ")
+    ViewData(symbol=symbol, period=period, interval=interval).plot_ichimoku()
