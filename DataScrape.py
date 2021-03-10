@@ -11,7 +11,6 @@ from selenium.common.exceptions import TimeoutException
 import os
 
 
-
 class GetData:
 
     def __init__(self, symbol=None, raw=None, save=None, period="1mo", interval="15m", source="Nasdaq"):
@@ -44,10 +43,10 @@ class GetData:
                                   options=self.options)
         return driver
 
-    @property
     def check_symbol(self):
         if not self.symbol:
             raise ValueError("Symbol not defined")
+
     def get_stock_list(self):
         """
         Go to Nasdaq stocks page and download the .csv file, replace in directory
