@@ -3,8 +3,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import mplfinance as mpf
 import os
-from DataScrape import GetData
+import io
+from PIL import Image
+import pickle
 from datetime import datetime
+from DataScrape import GetData
 
 
 class Analysis:
@@ -16,7 +19,7 @@ class Analysis:
         self.period = period
         self.interval = interval
         self.save = save
-        self.path = "/PycharmProjects/Options/output/"
+        self.path = "\PycharmProjects\Options\output"
         self.stocklist = []
         # define series for Ichimoku
         self.tenkan = {}
@@ -25,38 +28,9 @@ class Analysis:
         self.senkou_a = {}
         self.senkou_b = {}
 
-    def find_50200ma_cross(self):
-        """
-        Sends a ticker to get the data from the list of Nasdaq tickers, grabs the actions (dividends, stock splits),
-        calculates the 200ma, adjusts if any dividends or stock splits occured in that time.
-        """
-        # ToDo: need to do a lag and look at the previous 7 days to compare the 200ma/50ma cross to see the direction
-        for i in GetData.get_stock_list():
-            cross = False
-            try:
-                data = GetData(i)
-                tikr_data = data.get_stock_data()
-                tikr_actions = tikr_data.actions
-                # tikrYrDy = tikr_data.history(period="1y", interval="1d")
-                tikr_close = tikr_data.history()
-                tikr_9ma = tikr_close["Close"].tail(9).mean()
-                tikr_50ma = tikr_data.info["fiftyDayAverage"]
-                tikr_200ma = tikr_close["Close"].tail(200).mean()
-                last_close = tikr_close["Close"].tail(1)[0]
-            except ValueError as e:
-                # print(f"Not enough data, Exception: {e}")
-                continue
-            if 1 > tikr_50ma / tikr_200ma > 0.99 and \
-                    last_close > tikr_9ma and \
-                    tikr_50ma < last_close < tikr_200ma:
-                cross = True
-                print(f"{i}\n50ma: {tikr_50ma}\n200ma: {tikr_200ma}\nLast Close: {last_close}\n9ma: {tikr_9ma}\n")
-            else:
-                cross = False
-            if cross:
-                self.stocklist.append(i)
-
     def ichimoku(self):
+        # TODO: need to re-write the calculations for the lines into DataFrames so I can use the shift() fn to plot
+
         data = GetData(self.p1, period=self.period, interval=self.interval).get_stock_history
         # calculate Conversion Line (Tenkan)
         # Tenkan-sen (Conversion Line): (9-period high + 9-period low)/2
@@ -86,43 +60,97 @@ class Analysis:
         down = -1*delta.clip(upper=0)
         ema_up = up.ewm(com=13, adjust=False).mean()
         ema_down = down.ewm(com=13, adjust=False).mean()
-        data['rs'] = ema_up/ema_down
+        rs = ema_up/ema_down
+        data['rsi'] = 100-(100/(1+rs))
+        data['rsi_high'] = 70
+        data['rsi_low'] = 30
 
         return data
 
 
 class ViewData(Analysis):
-    def __init_(self, symbol):
-        self.symbol = symbol
+    def __init_(self, save=False):
+        self.save = save
         super().__init__(self.symbol)
+
+    def get_file_list(self):
+        # TODO: sort by the newest file
+        file_list = []
+        for i in os.listdir(path=os.environ["USERPROFILE"]+self.path):
+            if i[:len(symbol)] == symbol.upper():
+                file_list.append(i)
+
+        return file_list
+
+    def load_chart(self, file):
+        img = pickle.load(open(os.environ["USERPROFILE"]+self.path+f'\{file}', "rb"))
+
+        return Image.open(img).show()
 
     def compare_with_index(self):
         # TODO: plot a comparison with the S&P500 or NASDAQ
-
         return
 
     def plot_ichimoku(self):
         # TODO: add RSI oscillator to volume
         # Get data from Analysis class
         data = super().ichimoku()
+        # Set variable to store image in bytes
+        buf300dpi = io.BytesIO()
         # Setup plot based on nightclouds MPL style with no grid
         s = mpf.make_mpf_style(base_mpf_style='nightclouds', gridstyle='')
-        setup = dict(type='candle', style=s, volume=True, figscale=2, scale_width_adjustment=dict(candle=1.5),
+        setup = dict(type='candle', style=s, volume=True, figscale=2,
+                     scale_width_adjustment=dict(candle=1.5, volume=1.5),
                      fill_between=dict(y1=data['senkou_span_a'].values, y2=data['senkou_span_b'].values, alpha=0.25),
                      tight_layout=False)
         # Create Ichimoku lines to add to the plot
-        ap0 = [mpf.make_addplot(data['tenkan_sen'], color='g', width=0.8, alpha=0.75),
+        ap0 = [mpf.make_addplot(data['tenkan_sen'], color='lime', width=0.9, alpha=0.75),
                mpf.make_addplot(data['kijun_sen'], color='r', width=0.8, alpha=0.75),
                mpf.make_addplot(data['chickou_span'], color='pink', linestyle='dotted', width=0.4),
                mpf.make_addplot(data['senkou_span_a'], color='y', width=0.5, alpha=0.5),
-               mpf.make_addplot(data['senkou_span_b'], color='purple', width=0.5, alpha=0.5)]
-        ap1 = mpf.make_addplot(data['rs'], panel=1)
-        # Plot data and add lines
-        mpf.plot(data, **setup, addplot=[ap0,ap1], title=f'\n {symbol.upper()}, {datetime.now().strftime("%m/%d/%Y")}')
+               mpf.make_addplot(data['senkou_span_b'], color='purple', width=0.5, alpha=0.5),
+               mpf.make_addplot(data['rsi'], color='white', panel=1),
+               mpf.make_addplot(data['rsi_high'], color='pink', alpha=0.5, panel=1),
+               mpf.make_addplot(data['rsi_low'], color='pink', alpha=0.5, panel=1)]
+        # Save the file if true, if false plot
+        if self.save:
+            mpf.plot(data,
+                     **setup,
+                     savefig=dict(fname=buf300dpi,
+                                  dpi=300,
+                                  pad_inches=0.25),
+                     addplot=ap0,
+                     title=f'\n {symbol.upper()}, {datetime.now().strftime("%m/%d/%Y")}')
+        else:
+            mpf.plot(data, **setup, addplot=ap0, title=f'\n {symbol.upper()}, {datetime.now().strftime("%m/%d/%Y")}')
+
+        return buf300dpi
 
 
 if __name__ == "__main__":
     symbol = input("Please input symbol: ")
-    period = input("6mo/1mo: ")
-    interval = input("1d/15m: ")
-    ViewData(symbol=symbol, period=period, interval=interval).plot_ichimoku()
+    period = input("6mo/1mo/5d/1d: ")
+    interval = input("1d/15m/5m/1m: ")
+    view = ViewData(symbol=symbol, period=period, interval=interval, save=True)
+    image = view.plot_ichimoku()
+    to_view = input("View file? (yes/hist/no): ")
+    if to_view.lower() == "yes":
+        Image.open(image).show()
+    elif to_view.lower() == "hist":
+        try:
+            view.load_chart(view.get_file_list()[0])
+        except ValueError:
+            print("No charts saved")
+    else:
+        filename = f'\PycharmProjects\Options\output\{symbol.upper()}-{datetime.now().strftime("%m-%d-%Y")}.p'
+        pickle.dump(image, open(os.environ["USERPROFILE"]+f'{filename}', "wb"))
+
+
+"""
+To check existing charts:
+1) get the list of files saved for the symbol --> file_list = view.get_file_list()
+2) view the list of files to select the correct date --> file_list
+3) set file == file_list[INDEX OF CORRECT DATE]
+4) load the chart --> view.load_chart(file)
+
+"""
