@@ -136,13 +136,3 @@ if __name__ == "__main__":
     else:
         filename = f'\PycharmProjects\Options\output\{symbol.upper()}-{datetime.now().strftime("%m-%d-%Y")}.p'
         pickle.dump(image, open(os.environ["USERPROFILE"]+f'{filename}', "wb"))
-
-
-"""
-To check existing charts:
-1) get the list of files saved for the symbol --> file_list = view.get_file_list()
-2) view the list of files to select the correct date --> file_list
-3) set file == file_list[INDEX OF CORRECT DATE]
-4) load the chart --> view.load_chart(file)
-
-"""
