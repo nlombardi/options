@@ -57,8 +57,6 @@ class Analysis:
                 self.stocklist.append(i)
 
     def ichimoku(self):
-        # TODO: need to re-write the calculations for the lines into DataFrames so I can use the shift() fn to plot
-
         data = GetData(self.p1, period=self.period, interval=self.interval).get_stock_history
         # calculate Conversion Line (Tenkan)
         # Tenkan-sen (Conversion Line): (9-period high + 9-period low)/2
@@ -82,6 +80,14 @@ class Analysis:
         ftytwo_period_low = data['Low'].rolling(window=52).min()
         data['senkou_span_b'] = ((ftytwo_period_high + ftytwo_period_low) / 2).shift(26)
 
+        # Calculate the RSI
+        delta = data['Close'].diff()
+        up = delta.clip(lower=0)
+        down = -1*delta.clip(upper=0)
+        ema_up = up.ewm(com=13, adjust=False).mean()
+        ema_down = down.ewm(com=13, adjust=False).mean()
+        data['rs'] = ema_up/ema_down
+
         return data
 
 
@@ -92,6 +98,7 @@ class ViewData(Analysis):
 
     def compare_with_index(self):
         # TODO: plot a comparison with the S&P500 or NASDAQ
+
         return
 
     def plot_ichimoku(self):
@@ -109,8 +116,9 @@ class ViewData(Analysis):
                mpf.make_addplot(data['chickou_span'], color='pink', linestyle='dotted', width=0.4),
                mpf.make_addplot(data['senkou_span_a'], color='y', width=0.5, alpha=0.5),
                mpf.make_addplot(data['senkou_span_b'], color='purple', width=0.5, alpha=0.5)]
+        ap1 = mpf.make_addplot(data['rs'], panel=1)
         # Plot data and add lines
-        mpf.plot(data, **setup, addplot=ap0, title=f'\n {symbol.upper()}, {datetime.now().strftime("%m/%d/%Y")}')
+        mpf.plot(data, **setup, addplot=[ap0,ap1], title=f'\n {symbol.upper()}, {datetime.now().strftime("%m/%d/%Y")}')
 
 
 if __name__ == "__main__":
