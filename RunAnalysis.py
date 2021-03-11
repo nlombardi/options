@@ -1,6 +1,3 @@
-import yfinance as yf
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 import mplfinance as mpf
 import os
 import io
