@@ -13,25 +13,17 @@ from DataScrape import GetData
 class Analysis:
 
     def __init__(self, symbol, days=25, period="1mo", interval="15m", symbol2=None, save=None):
-        self.p1 = symbol
-        self.p2 = symbol2
+        self.symbol = symbol
         self.days = days
         self.period = period
         self.interval = interval
         self.save = save
         self.path = "\PycharmProjects\Options\output"
-        self.stocklist = []
-        # define series for Ichimoku
-        self.tenkan = {}
-        self.kijun = {}
-        self.chikou = {}
-        self.senkou_a = {}
-        self.senkou_b = {}
 
     def ichimoku(self):
         # TODO: need to re-write the calculations for the lines into DataFrames so I can use the shift() fn to plot
 
-        data = GetData(self.p1, period=self.period, interval=self.interval).get_stock_history
+        data = GetData(self.symbol, period=self.period, interval=self.interval).get_stock_history
         # calculate Conversion Line (Tenkan)
         # Tenkan-sen (Conversion Line): (9-period high + 9-period low)/2
         nine_period_high = data['High'].rolling(window=9).max()
