@@ -12,7 +12,7 @@ from DataScrape import GetData
 
 class Analysis:
 
-    def __init__(self, symbol, days=25, period="1mo", interval="15m", symbol2=None, save=None):
+    def __init__(self, symbol, days=25, period="1mo", interval="15m", save=None):
         self.symbol = symbol
         self.days = days
         self.period = period
