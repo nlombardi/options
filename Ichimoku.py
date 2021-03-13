@@ -58,7 +58,7 @@ class Analysis:
 
 
 class ViewData(Analysis):
-    def __init_(self, save=False):
+    def __main__(self, save=False):
         self.save = save
         super().__init__(self.symbol)
 
