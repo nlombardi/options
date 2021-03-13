@@ -116,6 +116,34 @@ class ViewData(Analysis):
         return buf300dpi
 
 
+class Alert(Analysis):
+    def __main__(self):
+        super().__init__(self.symbol)
+
+    def check_conversion(self, data):
+        if data['tenkan_sen'][-1] > data['kijun_sen'][-1] \
+                and data['tenkan_sen'][-2] <= data['kijun_sen'][-2]:
+            return "up"
+        elif data['tenkan_sen'][-1] < data['kijun_sen'][-1] \
+                and data['tenkan_sen'][-2] >= data['kijun_sen'][-2]:
+            return "down"
+        else:
+            return False
+
+    def check_cloud(self, data):
+        if data['Close'][-1] > max(data['senkou_span_a'][-1], data['senkou_span_b'][-1]):
+            return "up"
+        elif data['Close'][-1] < min(data['senkou_span_a'][-1], data['senkou_span_b'][-1]):
+            return "down"
+        else:
+            return False
+
+    def find_entry(self):
+        data = super().ichimoku()
+        if self.check_conversion(data) == "up" and self.check_cloud(data) == "up":
+            print("Conversion up and price above cloud!")
+
+
 if __name__ == "__main__":
     symbol = input("Please input symbol: ")
     period = input("6mo/1mo/5d/1d: ")
