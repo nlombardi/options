@@ -18,8 +18,6 @@ class Analysis:
         self.path = "\PycharmProjects\Options\output"
 
     def ichimoku(self):
-        # TODO: need to re-write the calculations for the lines into DataFrames so I can use the shift() fn to plot
-
         data = GetData(self.symbol, period=self.period, interval=self.interval).get_stock_history
         # calculate Conversion Line (Tenkan)
         # Tenkan-sen (Conversion Line): (9-period high + 9-period low)/2
@@ -142,9 +140,17 @@ class Alert(Analysis):
         data = super().ichimoku()
         if self.check_conversion(data) == "up" and self.check_cloud(data) == "up":
             print("Conversion up and price above cloud!")
+            print(f"Symbol: {self.symbol}, Period: {self.period}, Interval: {self.interval}")
+        elif self.check_conversion(data) == "down" and self.check_cloud(data) == "down":
+            print("Conversion down and price below cloud!")
+            print(f"Symbol: {self.symbol}, Period: {self.period}, Interval: {self.interval}")
+        else:
+            print("No pattern detected")
 
 
 if __name__ == "__main__":
+    # TODO: Add a function that scans for GOOG dropping below and sends text to buy put Options (1m/15m interval 2d/1mo)
+    # TODO: WMT for a swing trade
     symbol = input("Please input symbol: ")
     period = input("6mo/1mo/5d/1d: ")
     interval = input("1d/15m/5m/1m: ")

@@ -88,7 +88,6 @@ class GetData:
             driver.quit()
             print("Timed out..")
 
-    @property
     def get_real_time(self):
         # Takes symbol and index input and looks up the real time trading and posts them
         self.geturl()
@@ -100,10 +99,13 @@ class GetData:
         self._tikr_data = yf.Ticker(f"{self.symbol}")
         return self._tikr_data
 
-    @property
     def get_stock_history(self):
         self.get_stock_data()
-        self._tikr_hist = self._tikr_data.history(period=self.period, interval=self.interval)
-        if self.save is True:
-            self._tikr_hist.to_csv(os.environ["USERPROFILE"] + self._path + f"{self.symbol}.csv")
-        return self._tikr_hist
+        try:
+            self._tikr_hist = self._tikr_data.history(period=self.period, interval=self.interval)
+            if self.save is True:
+                self._tikr_hist.to_csv(os.environ["USERPROFILE"] + self._path + f"{self.symbol}.csv")
+        except Exception:
+            self._tikr_hist = pd.DataFrame()
+        finally:
+            return self._tikr_hist
