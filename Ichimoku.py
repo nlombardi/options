@@ -6,18 +6,18 @@ from datetime import datetime
 from DataScrape import GetData
 
 
-
 class Analysis:
 
-    def __init__(self, symbol, days=25, period="1mo", interval="15m", save=None):
+    def __init__(self, symbol, period="1mo", interval="15m", save=None):
         self.symbol = symbol
-        self.days = days
         self.period = period
         self.interval = interval
         self.save = save
         self.path = "\PycharmProjects\Options\output"
 
-    def ichimoku(self):
+    def ichimoku(self, period: str = False, interval: str = False):
+        self.period = period if period else self.period
+        self.interval = interval if interval else self.interval
         data = GetData(self.symbol, period=self.period, interval=self.interval).get_stock_history()
         if data.empty:
             return data

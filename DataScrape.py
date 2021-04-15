@@ -48,9 +48,7 @@ class GetData:
             raise ValueError("Symbol not defined")
 
     def get_stock_list(self):
-        """
-        Go to Nasdaq stocks page and download the .csv file, replace in directory
-        """
+        # Go to Nasdaq stocks page and download the .csv file, replace in directory
         for tries in range(5):
             try:
                 if self.source == "Nasdaq":
@@ -65,11 +63,10 @@ class GetData:
                     raise ValueError("Invalid response from webserver")
                 # Scrape results
                 self.symbols = pd.read_csv(io.StringIO(r.content.decode("utf-8")))
-                print("Success")
-                break
+                print(f"Successfully grabbed the {self.source} stock list!")
+                return self.symbols["Symbol"].tolist()
             except Exception as e:
                 print(f"Request failed, Exception: {e}")
-        return self.symbols["Symbol"].tolist()
 
     def geturl(self):
         self.check_symbol()
