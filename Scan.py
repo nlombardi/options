@@ -31,12 +31,17 @@ class Alert(Ichimoku.Analysis):
         else:
             return False
 
+    def check_rsi(self, data):
+        if data['rsi'][-1] > data['rsi'][:-7].mean()
+
     def find_entry(self):
         data = super().ichimoku(period=self.period, interval=self.interval)
         if data.empty:
             pass
         else:
-            if self.check_conversion(data) == "up" and self.check_cloud(data) == "up":
+            if self.check_conversion(data) == "up" \
+                    and self.check_cloud(data) == "up"\
+                    and self.check_rsi(data) == "up":
                 print("Conversion up and price above cloud!")
                 print(f"Symbol: {self.symbol}, Period: {self.period}, Interval: {self.interval}")
                 up = {'Symbol': self.symbol, 'Period': self.period, 'Interval': self.interval, 'Buy/Sell': "BUY"}

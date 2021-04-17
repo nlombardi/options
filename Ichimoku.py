@@ -44,12 +44,12 @@ class Analysis:
             ftytwo_period_low = data['Low'].rolling(window=52).min()
             data['senkou_span_b'] = ((ftytwo_period_high + ftytwo_period_low) / 2).shift(26)
 
-            # Calculate the RSI
+            # Calculate the RSI 7-day for short, switch to 21-day for intermediate 
             delta = data['Close'].diff()
             up = delta.clip(lower=0)
             down = -1*delta.clip(upper=0)
-            ema_up = up.ewm(com=13, adjust=False).mean()
-            ema_down = down.ewm(com=13, adjust=False).mean()
+            ema_up = up.ewm(com=7, adjust=False).mean()
+            ema_down = down.ewm(com=7, adjust=False).mean()
             rs = ema_up/ema_down
             data['rsi'] = 100-(100/(1+rs))
             data['rsi_high'] = 70
