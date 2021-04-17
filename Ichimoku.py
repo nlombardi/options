@@ -98,7 +98,7 @@ class ViewData(Analysis):
                                       dpi=300,
                                       pad_inches=0.25),
                          addplot=ap0,
-                         title=f'\n {self.symbol.upper()}, {datetime.now().strftime("%m/%d/%Y")}')
+                         title=f'\n {self.symbol.upper()}, {datetime.now().strftime("%m-%d-%Y")}')
                 filename = f'\PycharmProjects\Options\output\{self.symbol.upper()}-{self.period}-{self.interval}-' \
                            f'{datetime.now().strftime("%m-%d-%Y")}.p'
                 pickle.dump(buf300dpi, open(os.environ["USERPROFILE"] + f"{filename}", "wb"))
@@ -110,5 +110,5 @@ class ViewData(Analysis):
                                       dpi=300,
                                       pad_inches=0.25),
                          addplot=ap0,
-                         title=f'\n {self.symbol.upper()}, {datetime.now().strftime("%m/%d/%Y")}')
+                         title=f'\n {self.symbol.upper()}, {datetime.now().strftime("%m-%d-%Y")}')
             return buf300dpi

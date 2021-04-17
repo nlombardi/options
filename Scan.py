@@ -60,11 +60,11 @@ if __name__ == "__main__":
     # pickle results
     with open(os.environ['USERPROFILE'] +
               "\\PycharmProjects\\Options\\output\\EntryList_" + source + "_"
-              + datetime.now().strftime("%m/%d/%Y") + ".p", "wb") as f:
-        pickle.dumps(entry_list, f)
+              + datetime.now().strftime("%m-%d-%Y") + ".p", "wb") as f:
+        pickle.dump(entry_list, f)
     f.close()
     # convert to dataframe and save as csv
-    df = pd.DataFrame.from_dict(dict(entry_list))
+    df = pd.DataFrame.from_dict(entry_list)
     df.to_csv(os.environ['USERPROFILE'] +
               "\\PycharmProjects\\Options\\output\\EntryList_" + source + "_"
-              + datetime.now().strftime("%m/%d/%Y") + ".csv")
+              + datetime.now().strftime("%m-%d-%Y") + ".csv")
