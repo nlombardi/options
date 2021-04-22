@@ -1,8 +1,9 @@
 import Ichimoku
 from DataScrape import GetData
+import os
+import concurrent.futures
 import pickle
 from pick import pick
-import os
 import pandas as pd
 from datetime import datetime
 
@@ -32,9 +33,26 @@ class Alert(Ichimoku.Analysis):
             return False
 
     def check_rsi(self, data):
-        if data['rsi'][-1] > data['rsi'][:-7].mean()
+        last_entry = round(data['rsi'][-1], 0)
+        second_last_entry = round(data['rsi'][-2], 0)
+        increasing = last_entry > second_last_entry
+        decreasing = last_entry < second_last_entry
+        four_period = round(data['rsi'][-4:], 0)
+        four_period_avg = round(four_period.mean(), 0)
+        # check if the rsi is trending up/down or hit support/resistance and bounced/fell (4 --> 1hr on 15min interval)
+        if last_entry > four_period_avg and increasing \
+                or (x < 30 for x in four_period) and increasing:
+            return "up"
+        elif last_entry > four_period_avg and decreasing \
+                or (x > 70 for x in four_period) and decreasing:
+            return "down"
+
+    def check_volume(self, data):
+        # Checks if the volume on the stock is greater than the average volume and over a certain threshold (ie, 50,000)
+        pass
 
     def find_entry(self):
+        # TODO: add a volume check to make sure the volume is increasing on the stock
         data = super().ichimoku(period=self.period, interval=self.interval)
         if data.empty:
             pass
@@ -46,11 +64,21 @@ class Alert(Ichimoku.Analysis):
                 print(f"Symbol: {self.symbol}, Period: {self.period}, Interval: {self.interval}")
                 up = {'Symbol': self.symbol, 'Period': self.period, 'Interval': self.interval, 'Buy/Sell': "BUY"}
                 return up
-            elif self.check_conversion(data) == "down" and self.check_cloud(data) == "down":
+            elif self.check_conversion(data) == "down" \
+                    and self.check_cloud(data) == "down" \
+                    and self.check_rsi(data) == "down":
                 print("Conversion down and price below cloud!")
                 print(f"Symbol: {self.symbol}, Period: {self.period}, Interval: {self.interval}")
                 down = {'Symbol': self.symbol, 'Period': self.period, 'Interval': self.interval, 'Buy/Sell': "SELL"}
                 return down
+
+#
+# def scan_list(symbol, period=None, interval=None):
+#     entry = Alert(symbol=symbol, period=period, interval=interval).find_entry()
+#     if entry:
+#         return entry
+#     else:
+#         pass
 
 
 if __name__ == "__main__":
@@ -73,3 +101,7 @@ if __name__ == "__main__":
     df.to_csv(os.environ['USERPROFILE'] +
               "\\PycharmProjects\\Options\\output\\EntryList_" + source + "_"
               + datetime.now().strftime("%m-%d-%Y") + ".csv")
+
+    # # MULTIPROCESSING
+    # with concurrent.futures.ProcessPoolExecutor() as executor:
+    #     entry_list = executor.map(scan_list, stock_list)

@@ -43,11 +43,10 @@ class LookupCompany:
             querystring = {"interval": "m3", "id": self.symbol}
 
         response = requests.request("GET", url, headers=headers, params=querystring)
-        response.status_code
+        response.status_code()
         response.raise_for_status()
 
         return response.json()
-        print(response.text)
 
     def getHistory(self, symbol=""):
         url = "https://apidojo-yahoo-finance-v1.p.rapidapi.com/stock/get-detail"
@@ -67,8 +66,6 @@ class LookupCompany:
         response = requests.request("GET", url, headers=headers, params=query)
 
         return response.json()
-        print(response.text)
-
 
 
 LookupCompany = LookupCompany(defaultAPI="yahoo", symbol="TSLA")
