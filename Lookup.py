@@ -34,10 +34,10 @@ def view_graph(symbol, period, interval, save=False):
 
 if __name__ == "__main__":
     symbol = input("Please input symbol: ")
-    view = input("View graph? (yes/hist/no): ")
+    view, index1 = pick(['Yes', 'Hist', 'No'], 'View graph? ')
     if view.lower() != "hist":
-        period = input("6mo/1mo/5d/1d: ")
-        interval = input("1d/15m/5m/1m: ")
+        period, index2 = pick(['6mo', '1mo', '5d', '1d'], 'Select a time period: ')
+        interval, index3 = pick(['1d', '15m', '5m', '1m'], 'Select an interval: ')
         save = False if input("Save file? (yes/no): ").upper() == "NO" else True
         image = view_graph(symbol=symbol, period=period, interval=interval, save=save)
         if not image:

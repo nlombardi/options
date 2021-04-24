@@ -1,12 +1,15 @@
 import Ichimoku
 from DataScrape import GetData
-import os
-import concurrent.futures
-import pickle
+from multiprocessing.dummy import Pool as ThreadPool
+import itertools
 from pick import pick
+# for saving files
+import os
+import pickle
 import pandas as pd
 from datetime import datetime
-
+# for testing
+import time
 
 class Alert(Ichimoku.Analysis):
     def __main__(self, period: str = False, interval: str = False):
@@ -72,36 +75,38 @@ class Alert(Ichimoku.Analysis):
                 down = {'Symbol': self.symbol, 'Period': self.period, 'Interval': self.interval, 'Buy/Sell': "SELL"}
                 return down
 
-#
-# def scan_list(symbol, period=None, interval=None):
-#     entry = Alert(symbol=symbol, period=period, interval=interval).find_entry()
-#     if entry:
-#         return entry
-#     else:
-#         pass
+
+def scan_list(symbol, period=None, interval=None):
+    return Alert(symbol=symbol, period=period, interval=interval).find_entry()
 
 
 if __name__ == "__main__":
     period, index1 = pick(['6mo', '1mo', '5d', '1d'], 'Select a time period: ')
     interval, index2 = pick(['1d', '15m', '5m', '1m'], 'Select an interval: ')
     source, index3 = pick(['Nasdaq', 'S&P500'], 'Select the stock list source: ')
-    entry_list = []
+    entry = {'Symbol': [], 'Period': [], 'Interval': [], 'Buy/Sell': []}
     stock_list = GetData(source=str(source)).get_stock_list()
     print("Starting to scan for entry points!")
-    for i in stock_list:
-        entry_list.append(Alert(symbol=i, period=period, interval=interval).find_entry())
-    # pickle results
+    # Pool requests to get data in parallel (much faster)
+    tp = ThreadPool(50)
+    entry_list = tp.starmap(scan_list, zip(stock_list, itertools.repeat(period), itertools.repeat(interval)))
+    tp.close()
+    tp.join()
+    for i in entry_list:
+        if i:
+            entry["Symbol"].append(i["Symbol"])
+            entry["Period"].append(i["Period"])
+            entry["Interval"].append(i["Interval"])
+            entry["Buy/Sell"].append(i["Buy/Sell"])
+    # Save results
     with open(os.environ['USERPROFILE'] +
               "\\PycharmProjects\\Options\\output\\EntryList_" + source + "_"
               + datetime.now().strftime("%m-%d-%Y") + ".p", "wb") as f:
-        pickle.dump(entry_list, f)
+        pickle.dump(entry, f)
     f.close()
     # convert to dataframe and save as csv
-    df = pd.DataFrame.from_dict(entry_list)
+    df = pd.DataFrame.from_dict(entry)
     df.to_csv(os.environ['USERPROFILE'] +
               "\\PycharmProjects\\Options\\output\\EntryList_" + source + "_"
               + datetime.now().strftime("%m-%d-%Y") + ".csv")
 
-    # # MULTIPROCESSING
-    # with concurrent.futures.ProcessPoolExecutor() as executor:
-    #     entry_list = executor.map(scan_list, stock_list)
